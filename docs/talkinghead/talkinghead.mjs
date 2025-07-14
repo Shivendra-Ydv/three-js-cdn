@@ -22,18 +22,16 @@
 * SOFTWARE.
 */
 
-import * as THREE from 'https://shivendra-ydv.github.io/three-js-cdn/talkinghead/three.module.js';
-import { OrbitControls } from 'https://shivendra-ydv.github.io/three-js-cdn/talkinghead/addons/OrbitControls.js';
-import { GLTFLoader } from 'https://shivendra-ydv.github.io/three-js-cdn/talkinghead/addons/GLTFLoader.js';
-import { DRACOLoader } from 'https://shivendra-ydv.github.io/three-js-cdn/talkinghead/addons/DRACOLoader.js';
-import { FBXLoader } from 'https://shivendra-ydv.github.io/three-js-cdn/talkinghead/addons/FBXLoader.js';
-import { RoomEnvironment } from 'https://shivendra-ydv.github.io/three-js-cdn/talkinghead/addons/RoomEnvironment.js';
-import Stats from 'https://shivendra-ydv.github.io/three-js-cdn/talkinghead/addons/libs/stats.module.js';
-import { DynamicBones } from 'https://shivendra-ydv.github.io/three-js-cdn/talkinghead/dynamicbones.mjs';
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import Stats from 'three/addons/libs/stats.module.js';
 
-// If you use playback-worklet.js as a URL
-const workletUrl = new URL('https://shivendra-ydv.github.io/three-js-cdn/talkinghead/playback-worklet.js', import.meta.url);
-
+import{ DynamicBones } from './dynamicbones.mjs';
+const workletUrl = new URL('./playback-worklet.js', import.meta.url);
 
 // Temporary objects for animation loop
 const q = new THREE.Quaternion();
