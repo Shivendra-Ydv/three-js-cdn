@@ -2,30 +2,6 @@
 ```
 three-js-cdn
 ├─ docs
-│  └─ talkinghead
-│     ├─ addons
-│     │  ├─ DRACOLoader.js
-│     │  ├─ FBXLoader.js
-│     │  ├─ GLTFLoader.js
-│     │  ├─ libs
-│     │  │  ├─ curves
-│     │  │  │  └─ NURBSCurve.js
-│     │  │  ├─ fflate.module.js
-│     │  │  └─ stats.module.js
-│     │  ├─ OrbitControls.js
-│     │  ├─ RoomEnvironment.js
-│     │  └─ utils
-│     │     └─ BufferGeometryUtils.js
-│     ├─ dynamicbones.mjs
-│     ├─ playback-worklet.js
-│     ├─ talkinghead.mjs
-│     └─ three.module.js
-└─ README.md
-
-```
-```
-three-js-cdn
-├─ docs
 │  └─ TalkingHead
 │     ├─ dynamicbones.mjs
 │     ├─ examples
@@ -437,6 +413,9 @@ three-js-cdn
 │     │        ├─ XRHandModelFactory.js
 │     │        ├─ XRHandPrimitiveModel.js
 │     │        └─ XRPlanes.js
+│     ├─ lipsync-en.mjs
+│     ├─ lipsync-fi.mjs
+│     ├─ lipsync-lt.mjs
 │     ├─ playback-worklet.js
 │     ├─ talkinghead.mjs
 │     └─ three.module.js
