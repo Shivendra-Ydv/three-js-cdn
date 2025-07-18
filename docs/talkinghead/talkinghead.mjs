@@ -3090,7 +3090,8 @@ class TalkingHead {
             }
 
             // Add word
-            // ssml += x.word.replaceAll('&','&amp;')
+            ssml += x.word;
+            // .replaceAll('&','&amp;')
             //   .replaceAll('<','&lt;')
             //   .replaceAll('>','&gt;')
             //   .replaceAll('"','&quot;')
