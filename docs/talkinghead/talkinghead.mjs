@@ -2591,7 +2591,7 @@ class TalkingHead {
     const o = this.lipsync[lang] || Object.values(this.lipsync)[0];
     console.log("o before in lipsyncPreProcessText", o);
     o.preProcessText(s);
-    console.log("o in lipsyncPreProcessText", o);
+    console.log("return in lipsyncPreProcessText", o.preProcessText(s));
     return s;
   }
 
