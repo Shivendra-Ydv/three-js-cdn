@@ -2609,6 +2609,7 @@ class TalkingHead {
   * @param {number[][]} [excludes=null] Array of [start, end] index arrays to not speak
   */
   speakText(s, opt = null, onsubtitles = null, excludes = null ) {
+    console.log('s',s);
     opt = opt || {};
 
     // Classifiers
@@ -2624,6 +2625,7 @@ class TalkingHead {
     let ttsSentence = []; // Text-to-speech sentence
     let lipsyncAnim = []; // Lip-sync animation sequence
     const letters = [...s];
+    console.log('letters', letters);
     for( let i=0; i<letters.length; i++ ) {
       const isLast = i === (letters.length-1);
       const isSpeakable = letters[i].match(speakables);
@@ -2650,10 +2652,13 @@ class TalkingHead {
 
       // Add words to sentence and animations
       if ( isEndOfWord || isEndOfSentence || isLast ) {
+            console.log('textWord', textWord);
 
         // Add to text-to-speech sentence
         if ( textWord.length ) {
           textWord = this.lipsyncPreProcessText(textWord, lipsyncLang);
+                      console.log('textWord', textWord);
+
           if ( textWord.length ) {
             ttsSentence.push( {
               mark: markId,
