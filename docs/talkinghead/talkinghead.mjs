@@ -2585,8 +2585,9 @@ class TalkingHead {
   * @return {string} Pre-processsed text.
   */
   lipsyncPreProcessText(s,lang) {
-    const o = this.lipsync[lang] || Object.values(this.lipsync)[0];
-    return o.preProcessText(s);
+    // const o = this.lipsync[lang] || Object.values(this.lipsync)[0];
+    // return o.preProcessText(s);
+    return s;
   }
 
   /**
