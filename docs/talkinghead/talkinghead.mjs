@@ -3077,8 +3077,9 @@ class TalkingHead {
 
         // Look at the camera
         this.lookAtCamera(500);
-
         // Spoken text
+        console.log("line.text", line.text);
+        
         try {
           // Convert text to SSML
           let ssml = "<speak>";
@@ -3098,7 +3099,7 @@ class TalkingHead {
 
           });
           ssml += "</speak>";
-
+        console.log("ssml", ssml);
 
           const o = {
             method: "POST",
