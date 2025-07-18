@@ -3089,12 +3089,12 @@ class TalkingHead {
             }
 
             // Add word
-            ssml += x.word.replaceAll('&','&amp;')
-              .replaceAll('<','&lt;')
-              .replaceAll('>','&gt;')
-              .replaceAll('"','&quot;')
-              .replaceAll('\'','&apos;')
-              .replace(/^\p{Dash_Punctuation}$/ug,'<break time="750ms"/>');
+            // ssml += x.word.replaceAll('&','&amp;')
+            //   .replaceAll('<','&lt;')
+            //   .replaceAll('>','&gt;')
+            //   .replaceAll('"','&quot;')
+            //   .replaceAll('\'','&apos;')
+            //   .replace(/^\p{Dash_Punctuation}$/ug,'<break time="750ms"/>');
 
           });
           ssml += "</speak>";
