@@ -2610,6 +2610,7 @@ class TalkingHead {
   */
   speakText(s, opt = null, onsubtitles = null, excludes = null ) {
     opt = opt || {};
+    const isSsmlEnabled = opt.ssml !== false;
     // Classifiers
     const dividersSentence = /[!\.\?\n\p{Extended_Pictographic}]/ug;
     const dividersWord = /[ ]/ug;
@@ -2714,7 +2715,7 @@ class TalkingHead {
             if ( opt.ttsVoice ) o.pitch = opt.ttsPitch;
             if ( opt.ttsVolume ) o.volume = opt.ttsVolume;
           }
-          this.speechQueue.push(o);
+          this.speechQueue.push({ ...o, isSsmlEnabled });
 
           // Reset sentence and animation sequence
           ttsSentence = [];
@@ -2728,20 +2729,20 @@ class TalkingHead {
           let emoji = this.animEmojis[letters[i]];
           if ( emoji && emoji.link ) emoji = this.animEmojis[emoji.link];
           if ( emoji ) {
-            this.speechQueue.push( { emoji: emoji } );
+            this.speechQueue.push({ emoji, isSsmlEnabled });
           }
         }
 
-        this.speechQueue.push( { break: 100 } );
+        this.speechQueue.push({ break: 100, isSsmlEnabled });
 
       }
 
     }
 
-    this.speechQueue.push( { break: 1000 } );
+    this.speechQueue.push({ break: 1000, isSsmlEnabled });
 
     // Start speaking (if not already)
-    this.startSpeaking(false, opt);
+    this.startSpeaking();
   }
 
   /**
@@ -3041,14 +3042,16 @@ class TalkingHead {
   * load the audio file.
   * @param {boolean} [force=false] If true, forces to proceed (e.g. after break)
   */
-  async startSpeaking(force = false, opt = {}) {
-    const { ssml = false } = opt;
-    console.log("opt", opt);
-    if ( !this.armature || (this.isSpeaking && !force) ) return;
+  async startSpeaking(force = false) {
+    if (!this.armature || (this.isSpeaking && !force)) return;
+
     this.stateName = 'speaking';
     this.isSpeaking = true;
-    if ( this.speechQueue.length ) {
-      let line = this.speechQueue.shift();
+
+    if (this.speechQueue.length) {
+      const line = this.speechQueue.shift();
+      const { isSsmlEnabled = true } = line;
+
       if ( line.emoji ) {
 
         // Look at the camera
@@ -3057,10 +3060,10 @@ class TalkingHead {
         // Only emoji
         let duration = line.emoji.dt.reduce((a,b) => a+b,0);
         this.animQueue.push( this.animFactory( line.emoji ) );
-        setTimeout(() => this.startSpeaking(true, opt), duration);
+        setTimeout( this.startSpeaking.bind(this), duration, true );
       } else if ( line.break ) {
         // Break
-        setTimeout(() => this.startSpeaking(true, opt), line.break);
+        setTimeout( this.startSpeaking.bind(this), line.break, true );
       } else if ( line.audio ) {
 
         // Look at the camera
@@ -3079,12 +3082,10 @@ class TalkingHead {
         try {
           let inputData;
 
-          if (ssml === false) {
-            // ✅ Plain text fallback mode
+          if (!isSsmlEnabled) {
             const plainText = line.text.map(x => x.word).join(' ');
             inputData = { text: plainText };
           } else {
-            // ✅ Default SSML mode
             let ssml = "<speak>";
             line.text.forEach((x, i) => {
               if (i > 0) {
@@ -3112,7 +3113,7 @@ class TalkingHead {
               voice: {
                 languageCode: line.lang || this.avatar.ttsLang || this.opt.ttsLang,
                 name: line.voice || this.avatar.ttsVoice || this.opt.ttsVoice,
-                isSsmlEnabled: ssml
+                isSsmlEnabled: isSsmlEnabled
               },
               audioConfig: {
                 audioEncoding: this.ttsAudioEncoding,
@@ -3120,7 +3121,7 @@ class TalkingHead {
                 pitch: (line.pitch || this.avatar.ttsPitch || this.opt.ttsPitch) + this.mood.speech.deltaPitch,
                 volumeGainDb: (line.volume || this.avatar.ttsVolume || this.opt.ttsVolume) + this.mood.speech.deltaVolume
               },
-              enableTimePointing: opt.ssml === true ? [] : [1]  // timepointing only for SSML
+              enableTimePointing: isSsmlEnabled ? [] : [1]  // timepointing only for SSML
             })
           };
 
@@ -3137,7 +3138,7 @@ class TalkingHead {
             this.speakWithHands();
 
             // 👇 Reuse old timing logic only if SSML mode
-            if (opt.ssml !== false && data.timepoints) {
+            if (isSsmlEnabled && data.timepoints) {
               const times = [0];
               let markIndex = 0;
               line.text.forEach((x, i) => {
@@ -3184,11 +3185,11 @@ class TalkingHead {
             this.playAudio();
 
           } else {
-            this.startSpeaking(true, opt);
+            this.startSpeaking(true);
           }
         } catch (error) {
           console.error("Error:", error);
-          this.startSpeaking(true, opt);
+          this.startSpeaking(true);
         }
       } else if ( line.anim ) {
         // Only subtitles
@@ -3201,7 +3202,7 @@ class TalkingHead {
           }
           this.animQueue.push(x);
         });
-          setTimeout(() => this.startSpeaking(true, opt), 10 * line.anim.length);
+        setTimeout( this.startSpeaking.bind(this), 10 * line.anim.length, true );
       } else if ( line.marker ) {
         if ( typeof line.marker === "function" ) {
           line.marker();
