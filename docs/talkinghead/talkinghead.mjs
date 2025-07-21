@@ -3074,7 +3074,7 @@ class TalkingHead {
         this.playAudio();
 
       } else if ( line.text ) {
-
+        console.log("Speaking text:", line);
         // Look at the camera
         this.lookAtCamera(500);
 
