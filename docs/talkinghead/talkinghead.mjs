@@ -2610,7 +2610,6 @@ class TalkingHead {
   */
   speakText(s, opt = null, onsubtitles = null, excludes = null ) {
     opt = opt || {};
-    console.log('speakText', s, opt, onsubtitles, excludes);
     // Classifiers
     const dividersSentence = /[!\.\?\n\p{Extended_Pictographic}]/ug;
     const dividersWord = /[ ]/ug;
@@ -3075,7 +3074,6 @@ class TalkingHead {
         this.playAudio();
 
       } else if ( line.text ) {
-        console.log("Speaking text:", line);
         this.lookAtCamera(500);
         try {
           let inputData;
@@ -3112,7 +3110,8 @@ class TalkingHead {
               input: inputData,
               voice: {
                 languageCode: line.lang || this.avatar.ttsLang || this.opt.ttsLang,
-                name: line.voice || this.avatar.ttsVoice || this.opt.ttsVoice
+                name: line.voice || this.avatar.ttsVoice || this.opt.ttsVoice,
+                isSsmlEnabled: ssml !== false
               },
               audioConfig: {
                 audioEncoding: this.ttsAudioEncoding,
