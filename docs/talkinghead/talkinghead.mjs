@@ -3087,17 +3087,20 @@ class TalkingHead {
             inputData = { text: plainText };
           } else {
             let ssml = "<speak>";
-            line.text.forEach((x, i) => {
+            line.text.forEach( (x,i) => {
+              // Add mark
               if (i > 0) {
                 ssml += " <mark name='" + x.mark + "'/>";
               }
-              ssml += x.word
-                .replaceAll('&','&amp;')
+
+              // Add word
+              ssml += x.word.replaceAll('&','&amp;')
                 .replaceAll('<','&lt;')
                 .replaceAll('>','&gt;')
                 .replaceAll('"','&quot;')
                 .replaceAll('\'','&apos;')
-                .replace(/^\p{Dash_Punctuation}$/ug, '<break time="750ms"/>');
+                .replace(/^\p{Dash_Punctuation}$/ug,'<break time="750ms"/>');
+
             });
             ssml += "</speak>";
             inputData = { ssml };
@@ -3121,7 +3124,7 @@ class TalkingHead {
                 pitch: (line.pitch || this.avatar.ttsPitch || this.opt.ttsPitch) + this.mood.speech.deltaPitch,
                 volumeGainDb: (line.volume || this.avatar.ttsVolume || this.opt.ttsVolume) + this.mood.speech.deltaVolume
               },
-              enableTimePointing: isSsmlEnabled ? [] : [1]  // timepointing only for SSML
+              enableTimePointing: isSsmlEnabled ? [1] : []  // timepointing only for SSML
             })
           };
 
