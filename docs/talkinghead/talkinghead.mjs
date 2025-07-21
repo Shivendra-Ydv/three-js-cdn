@@ -2610,6 +2610,7 @@ class TalkingHead {
   */
   speakText(s, opt = null, onsubtitles = null, excludes = null ) {
     opt = opt || {};
+    console.log("ssml", opt.ssml);
     // Classifiers
     const dividersSentence = /[!\.\?\n\p{Extended_Pictographic}]/ug;
     const dividersWord = /[ ]/ug;
@@ -3044,6 +3045,7 @@ class TalkingHead {
   async startSpeaking(force = false, opt = {}) {
     const { ssml = false } = opt;
     console.log("startSpeaking", ssml);
+    console.log("opt", opt);
     if ( !this.armature || (this.isSpeaking && !force) ) return;
     this.stateName = 'speaking';
     this.isSpeaking = true;
