@@ -2742,6 +2742,7 @@ class TalkingHead {
     this.speechQueue.push( { break: 1000 } );
 
     // Start speaking (if not already)
+    console.log("speakText", opt);
     this.startSpeaking(opt);
   }
 
