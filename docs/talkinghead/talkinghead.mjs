@@ -133,7 +133,7 @@ class TalkingHead {
       mixerGainSpeech: null,
       mixerGainBackground: null,
       lipsyncLang: 'fi',
-      lipsyncModules: ['fi','en','lt'],
+      lipsyncModules: ['fi','en','lt', 'it'],
       pcmSampleRate: 22050,
       modelRoot: "Armature",
       modelPixelRatio: 1,
@@ -2585,14 +2585,8 @@ class TalkingHead {
   * @return {string} Pre-processsed text.
   */
   lipsyncPreProcessText(s,lang) {
-    console.log("s in lipsyncPreProcessText", s);
-    console.log("lang in lipsyncPreProcessText", lang);
-    console.log("this.lipsync in lipsyncPreProcessText", this.lipsync);
     const o = this.lipsync[lang] || Object.values(this.lipsync)[0];
-    console.log("o before in lipsyncPreProcessText", o);
-    o.preProcessText(s);
-    console.log("return in lipsyncPreProcessText", o.preProcessText(s));
-    return s;
+    return o.preProcessText(s);
   }
 
   /**
@@ -2660,7 +2654,6 @@ class TalkingHead {
         // Add to text-to-speech sentence
         if ( textWord.length ) {
           textWord = this.lipsyncPreProcessText(textWord, lipsyncLang);
-
           if ( textWord.length ) {
             ttsSentence.push( {
               mark: markId,
@@ -3084,8 +3077,8 @@ class TalkingHead {
 
         // Look at the camera
         this.lookAtCamera(500);
+
         // Spoken text
-        
         try {
           // Convert text to SSML
           let ssml = "<speak>";
@@ -3105,7 +3098,7 @@ class TalkingHead {
 
           });
           ssml += "</speak>";
-        console.log("ssml in startSpeaking", ssml);
+
 
           const o = {
             method: "POST",
