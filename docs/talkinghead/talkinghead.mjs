@@ -3124,7 +3124,7 @@ class TalkingHead {
                 pitch: (line.pitch || this.avatar.ttsPitch || this.opt.ttsPitch) + this.mood.speech.deltaPitch,
                 volumeGainDb: (line.volume || this.avatar.ttsVolume || this.opt.ttsVolume) + this.mood.speech.deltaVolume
               },
-              enableTimePointing: isSsmlEnabled ? [1] : []  // timepointing only for SSML
+              enableTimePointing: [1]
             })
           };
 
