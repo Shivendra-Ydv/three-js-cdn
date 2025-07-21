@@ -2742,7 +2742,7 @@ class TalkingHead {
     this.speechQueue.push( { break: 1000 } );
 
     // Start speaking (if not already)
-    this.startSpeaking();
+    this.startSpeaking(opt);
   }
 
   /**
@@ -3042,7 +3042,8 @@ class TalkingHead {
   * load the audio file.
   * @param {boolean} [force=false] If true, forces to proceed (e.g. after break)
   */
-  async startSpeaking( force = false ) {
+  async startSpeaking(force = false, opt = {}) {
+    const { ssml = false } = opt;
     if ( !this.armature || (this.isSpeaking && !force) ) return;
     this.stateName = 'speaking';
     this.isSpeaking = true;
@@ -3075,30 +3076,32 @@ class TalkingHead {
 
       } else if ( line.text ) {
         console.log("Speaking text:", line);
-        // Look at the camera
         this.lookAtCamera(500);
-
-        // Spoken text
         try {
-          // Convert text to SSML
-          let ssml = "<speak>";
-          line.text.forEach( (x,i) => {
-            // Add mark
-            if (i > 0) {
-              ssml += " <mark name='" + x.mark + "'/>";
-            }
+          let inputData;
 
-            // Add word
-            ssml += x.word.replaceAll('&','&amp;')
-              .replaceAll('<','&lt;')
-              .replaceAll('>','&gt;')
-              .replaceAll('"','&quot;')
-              .replaceAll('\'','&apos;')
-              .replace(/^\p{Dash_Punctuation}$/ug,'<break time="750ms"/>');
-
-          });
-          ssml += "</speak>";
-
+          if (ssml === false) {
+            // ✅ Plain text fallback mode
+            const plainText = line.text.map(x => x.word).join(' ');
+            inputData = { text: plainText };
+          } else {
+            // ✅ Default SSML mode
+            let ssml = "<speak>";
+            line.text.forEach((x, i) => {
+              if (i > 0) {
+                ssml += " <mark name='" + x.mark + "'/>";
+              }
+              ssml += x.word
+                .replaceAll('&','&amp;')
+                .replaceAll('<','&lt;')
+                .replaceAll('>','&gt;')
+                .replaceAll('"','&quot;')
+                .replaceAll('\'','&apos;')
+                .replace(/^\p{Dash_Punctuation}$/ug, '<break time="750ms"/>');
+            });
+            ssml += "</speak>";
+            inputData = { ssml };
+          }
 
           const o = {
             method: "POST",
@@ -3106,91 +3109,86 @@ class TalkingHead {
               "Content-Type": "application/json; charset=utf-8"
             },
             body: JSON.stringify({
-              "input": {
-                "ssml": ssml
+              input: inputData,
+              voice: {
+                languageCode: line.lang || this.avatar.ttsLang || this.opt.ttsLang,
+                name: line.voice || this.avatar.ttsVoice || this.opt.ttsVoice
               },
-              "voice": {
-                "languageCode": line.lang || this.avatar.ttsLang || this.opt.ttsLang,
-                "name": line.voice || this.avatar.ttsVoice || this.opt.ttsVoice
+              audioConfig: {
+                audioEncoding: this.ttsAudioEncoding,
+                speakingRate: (line.rate || this.avatar.ttsRate || this.opt.ttsRate) + this.mood.speech.deltaRate,
+                pitch: (line.pitch || this.avatar.ttsPitch || this.opt.ttsPitch) + this.mood.speech.deltaPitch,
+                volumeGainDb: (line.volume || this.avatar.ttsVolume || this.opt.ttsVolume) + this.mood.speech.deltaVolume
               },
-              "audioConfig": {
-                "audioEncoding": this.ttsAudioEncoding,
-                "speakingRate": (line.rate || this.avatar.ttsRate || this.opt.ttsRate) + this.mood.speech.deltaRate,
-                "pitch": (line.pitch || this.avatar.ttsPitch || this.opt.ttsPitch) + this.mood.speech.deltaPitch,
-                "volumeGainDb": (line.volume || this.avatar.ttsVolume || this.opt.ttsVolume) + this.mood.speech.deltaVolume
-              },
-              "enableTimePointing": [ 1 ] // Timepoint information for mark tags
+              enableTimePointing: opt.ssml === false ? [] : [1]  // timepointing only for SSML
             })
           };
 
-          // JSON Web Token
-          if ( this.opt.jwtGet && typeof this.opt.jwtGet === "function" ) {
+          if (this.opt.jwtGet && typeof this.opt.jwtGet === "function") {
             o.headers["Authorization"] = "Bearer " + await this.opt.jwtGet();
           }
 
-          const res = await fetch( this.opt.ttsEndpoint + (this.opt.ttsApikey ? "?key=" + this.opt.ttsApikey : ''), o);
+          const res = await fetch(this.opt.ttsEndpoint + (this.opt.ttsApikey ? "?key=" + this.opt.ttsApikey : ''), o);
           const data = await res.json();
 
-          if ( res.status === 200 && data && data.audioContent ) {
-
-            // Audio data
+          if (res.status === 200 && data && data.audioContent) {
             const buf = this.b64ToArrayBuffer(data.audioContent);
-            const audio = await this.audioCtx.decodeAudioData( buf );
+            const audio = await this.audioCtx.decodeAudioData(buf);
             this.speakWithHands();
 
-            // Workaround for Google TTS not providing all timepoints
-            const times = [ 0 ];
-            let markIndex = 0;
-            line.text.forEach( (x,i) => {
-              if ( i > 0 ) {
-                let ms = times[ times.length - 1 ];
-                if ( data.timepoints[markIndex] ) {
-                  ms = data.timepoints[markIndex].timeSeconds * 1000;
-                  if ( data.timepoints[markIndex].markName === ""+x.mark ) {
-                    markIndex++;
+            // 👇 Reuse old timing logic only if SSML mode
+            if (opt.ssml !== false && data.timepoints) {
+              const times = [0];
+              let markIndex = 0;
+              line.text.forEach((x, i) => {
+                if (i > 0) {
+                  let ms = times[times.length - 1];
+                  if (data.timepoints[markIndex]) {
+                    ms = data.timepoints[markIndex].timeSeconds * 1000;
+                    if (data.timepoints[markIndex].markName === "" + x.mark) {
+                      markIndex++;
+                    }
+                  }
+                  times.push(ms);
+                }
+              });
+
+              const timepoints = [{ mark: 0, time: 0 }];
+              times.forEach((x, i) => {
+                if (i > 0) {
+                  let prevDuration = x - times[i - 1];
+                  if (prevDuration > 150) prevDuration - 150;
+                  timepoints[i - 1].duration = prevDuration;
+                  timepoints.push({ mark: i, time: x });
+                }
+              });
+
+              let d = 1000 * audio.duration;
+              if (d > this.opt.ttsTrimEnd) d = d - this.opt.ttsTrimEnd;
+              timepoints[timepoints.length - 1].duration = d - timepoints[timepoints.length - 1].time;
+
+              line.anim.forEach(x => {
+                const timepoint = timepoints[x.mark];
+                if (timepoint) {
+                  for (let i = 0; i < x.ts.length; i++) {
+                    x.ts[i] = timepoint.time + (x.ts[i] * timepoint.duration) + this.opt.ttsTrimStart;
                   }
                 }
-                times.push( ms );
-              }
-            });
+              });
+            }
 
-            // Word-to-audio alignment
-            const timepoints = [ { mark: 0, time: 0 } ];
-            times.forEach( (x,i) => {
-              if ( i>0 ) {
-                let prevDuration = x - times[i-1];
-                if ( prevDuration > 150 ) prevDuration - 150; // Trim out leading space
-                timepoints[i-1].duration = prevDuration;
-                timepoints.push( { mark: i, time: x });
-              }
-            });
-            let d = 1000 * audio.duration; // Duration in ms
-            if ( d > this.opt.ttsTrimEnd ) d = d - this.opt.ttsTrimEnd; // Trim out silence at the end
-            timepoints[timepoints.length-1].duration = d - timepoints[timepoints.length-1].time;
-
-            // Re-set animation starting times and rescale durations
-            line.anim.forEach( x => {
-              const timepoint = timepoints[x.mark];
-              if ( timepoint ) {
-                for(let i=0; i<x.ts.length; i++) {
-                  x.ts[i] = timepoint.time + (x.ts[i] * timepoint.duration) + this.opt.ttsTrimStart;
-                }
-              }
-            });
-
-            // Add to the playlist
             this.audioPlaylist.push({ anim: line.anim, audio: audio });
             this.onSubtitles = line.onSubtitles || null;
             this.resetLips();
-            if ( line.mood ) this.setMood( line.mood );
+            if (line.mood) this.setMood(line.mood);
             this.playAudio();
 
           } else {
-            this.startSpeaking(true);
+            this.startSpeaking(true, opt);
           }
         } catch (error) {
           console.error("Error:", error);
-          this.startSpeaking(true);
+          this.startSpeaking(true, opt);
         }
       } else if ( line.anim ) {
         // Only subtitles
