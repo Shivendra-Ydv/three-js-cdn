@@ -2743,7 +2743,7 @@ class TalkingHead {
 
     // Start speaking (if not already)
     console.log("speakText", opt);
-    this.startSpeaking(opt);
+    this.startSpeaking(false, opt);
   }
 
   /**
