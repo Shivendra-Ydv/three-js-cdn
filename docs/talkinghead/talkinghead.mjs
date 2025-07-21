@@ -2610,7 +2610,7 @@ class TalkingHead {
   */
   speakText(s, opt = null, onsubtitles = null, excludes = null ) {
     opt = opt || {};
-
+    console.log('speakText', s, opt, onsubtitles, excludes);
     // Classifiers
     const dividersSentence = /[!\.\?\n\p{Extended_Pictographic}]/ug;
     const dividersWord = /[ ]/ug;
