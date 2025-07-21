@@ -3043,6 +3043,7 @@ class TalkingHead {
   */
   async startSpeaking(force = false, opt = {}) {
     const { ssml = false } = opt;
+    console.log("startSpeaking", ssml);
     if ( !this.armature || (this.isSpeaking && !force) ) return;
     this.stateName = 'speaking';
     this.isSpeaking = true;
@@ -3111,7 +3112,7 @@ class TalkingHead {
               voice: {
                 languageCode: line.lang || this.avatar.ttsLang || this.opt.ttsLang,
                 name: line.voice || this.avatar.ttsVoice || this.opt.ttsVoice,
-                isSsmlEnabled: ssml !== false
+                isSsmlEnabled: ssml
               },
               audioConfig: {
                 audioEncoding: this.ttsAudioEncoding,
@@ -3119,7 +3120,7 @@ class TalkingHead {
                 pitch: (line.pitch || this.avatar.ttsPitch || this.opt.ttsPitch) + this.mood.speech.deltaPitch,
                 volumeGainDb: (line.volume || this.avatar.ttsVolume || this.opt.ttsVolume) + this.mood.speech.deltaVolume
               },
-              enableTimePointing: opt.ssml === false ? [] : [1]  // timepointing only for SSML
+              enableTimePointing: opt.ssml === true ? [] : [1]  // timepointing only for SSML
             })
           };
 
