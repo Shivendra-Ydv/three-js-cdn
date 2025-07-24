@@ -3125,7 +3125,6 @@ class TalkingHead {
                 volumeGainDb: (line.volume || this.avatar.ttsVolume || this.opt.ttsVolume) + this.mood.speech.deltaVolume
               },
               enableTimePointing: ["SSML_MARK"]
-              // enableTimePointing: isSsmlEnabled ? [1]: ["SSML_MARK"]
             })
           };
 
@@ -3192,26 +3191,51 @@ class TalkingHead {
               this.playAudio();
 
             } else {
-              // ❌ No SSML, no timepoints: fallback logic
-
+              // ✅ Plain text with timepoints: use actual TTS timing data
+              
               const timepoints = [];
               const totalDuration = 1000 * audio.duration;
               const wordCount = line.text.length;
-              const avgDuration = totalDuration / wordCount;
-
-              for (let i = 0; i < wordCount; i++) {
-                timepoints.push({
-                  mark: i,
-                  time: i * avgDuration,
-                  duration: avgDuration
-                });
+              
+              if (data.timepoints && data.timepoints.length > 0) {
+                // Use actual timepoints from TTS API
+                for (let i = 0; i < wordCount; i++) {
+                  const currentTime = i < data.timepoints.length ? 
+                    data.timepoints[i].timeSeconds * 1000 : 
+                    totalDuration;
+                  
+                  const nextTime = i + 1 < data.timepoints.length ? 
+                    data.timepoints[i + 1].timeSeconds * 1000 : 
+                    totalDuration;
+                  
+                  let duration = nextTime - currentTime;
+                  if (duration > 150) duration -= 150; // Trim leading space like SSML version
+                  
+                  timepoints.push({
+                    mark: i,
+                    time: currentTime,
+                    duration: Math.max(duration, 50) // Ensure minimum duration
+                  });
+                }
+              } else {
+                // Fallback: if no timepoints available, use averaging
+                const avgDuration = totalDuration / wordCount;
+                
+                for (let i = 0; i < wordCount; i++) {
+                  timepoints.push({
+                    mark: i,
+                    time: i * avgDuration,
+                    duration: avgDuration
+                  });
+                }
               }
-
+              
+              // Apply timing to animations (same logic as SSML version)
               line.anim.forEach(x => {
                 const timepoint = timepoints[x.mark];
                 if (timepoint) {
                   for (let i = 0; i < x.ts.length; i++) {
-                    x.ts[i] = timepoint.time + (x.ts[i] * timepoint.duration);
+                    x.ts[i] = timepoint.time + (x.ts[i] * timepoint.duration) + this.opt.ttsTrimStart;
                   }
                 }
               });
