@@ -3124,7 +3124,8 @@ class TalkingHead {
                 pitch: (line.pitch || this.avatar.ttsPitch || this.opt.ttsPitch) + this.mood.speech.deltaPitch,
                 volumeGainDb: (line.volume || this.avatar.ttsVolume || this.opt.ttsVolume) + this.mood.speech.deltaVolume
               },
-              enableTimePointing: [1]
+              enableTimePointing: ["SSML_MARK"]
+              // enableTimePointing: isSsmlEnabled ? [1]: ["SSML_MARK"]
             })
           };
 
@@ -3140,8 +3141,10 @@ class TalkingHead {
             const audio = await this.audioCtx.decodeAudioData(buf);
             this.speakWithHands();
 
-            // 👇 Reuse old timing logic only if SSML mode
-            if (isSsmlEnabled && data.timepoints) {
+            if (isSsmlEnabled) {
+              // ✅ Full lipsync logic using SSML + marks + timepoints
+
+              // Workaround for Google TTS not providing all timepoints
               const times = [0];
               let markIndex = 0;
               line.text.forEach((x, i) => {
@@ -3157,11 +3160,12 @@ class TalkingHead {
                 }
               });
 
+              // Word-to-audio alignment
               const timepoints = [{ mark: 0, time: 0 }];
               times.forEach((x, i) => {
                 if (i > 0) {
                   let prevDuration = x - times[i - 1];
-                  if (prevDuration > 150) prevDuration - 150;
+                if ( prevDuration > 150 ) prevDuration -= 150; // Trim out leading space
                   timepoints[i - 1].duration = prevDuration;
                   timepoints.push({ mark: i, time: x });
                 }
@@ -3179,19 +3183,53 @@ class TalkingHead {
                   }
                 }
               });
+
+              // Add to the playlist
+              this.audioPlaylist.push({ anim: line.anim, audio: audio });
+              this.onSubtitles = line.onSubtitles || null;
+              this.resetLips();
+              if ( line.mood ) this.setMood( line.mood );
+              this.playAudio();
+
+            } else {
+              // ❌ No SSML, no timepoints: fallback logic
+
+              const timepoints = [];
+              const totalDuration = 1000 * audio.duration;
+              const wordCount = line.text.length;
+              const avgDuration = totalDuration / wordCount;
+
+              for (let i = 0; i < wordCount; i++) {
+                timepoints.push({
+                  mark: i,
+                  time: i * avgDuration,
+                  duration: avgDuration
+                });
+              }
+
+              line.anim.forEach(x => {
+                const timepoint = timepoints[x.mark];
+                if (timepoint) {
+                  for (let i = 0; i < x.ts.length; i++) {
+                    x.ts[i] = timepoint.time + (x.ts[i] * timepoint.duration);
+                  }
+                }
+              });
+
+              this.audioPlaylist.push({ anim: line.anim, audio: audio });
+              this.onSubtitles = line.onSubtitles || null;
+              this.resetLips();
+              if (line.mood) this.setMood(line.mood);
+              this.playAudio();
             }
 
-            this.audioPlaylist.push({ anim: line.anim, audio: audio });
-            this.onSubtitles = line.onSubtitles || null;
-            this.resetLips();
-            if (line.mood) this.setMood(line.mood);
-            this.playAudio();
-
           } else {
-            this.startSpeaking(true);
+            console.warn('TTS response missing audioContent or failed');
+            this.startSpeaking(true); // fallback
           }
-        } catch (error) {
-          console.error("Error:", error);
+
+        } catch (err) {
+          console.error("Error during startSpeaking():", err);
           this.startSpeaking(true);
         }
       } else if ( line.anim ) {
